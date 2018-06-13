@@ -1,0 +1,6 @@
+﻿## Ignore certain files in project.
+*.pyc
+.idea/
+__pycache__/
+.coverage
+*.tex
