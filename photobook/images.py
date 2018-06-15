@@ -7,40 +7,74 @@
 # Author: Richard Hill http://retu.be
 
 import glob
-from typing import List
+from typing import List, Union
 import os, sys
 from datetime import datetime
-# from PIL import Image
-# from PIL.ExifTags import TAGS
+from PIL import Image
+from PIL.ExifTags import TAGS
 from exifread import process_file
+from pylatex.utils import escape_latex
 
+from photobook import tregex
 
-class Image:
+class Photo:
     get_tags = {'EXIF DateTimeOriginal': 'timestampstr',
                 'EXIF ExifImageWidth': 'width',
-                'EXIF ExifImageLength': 'height'}
+                'EXIF ExifImageLength': 'height',
+                'Image Orientation': 'orientation'}
+
+    rotation_pattern = '(?:Rotated)? (?P<angle>\d+(?:.\d+)?) (?P<direction>\w+)'
 
     def __init__(self, filepath) -> None:
-        self.path = filepath
-        tags = process_file(open(filepath, 'rb'))
+        self.filepath = filepath
+        self.path, file = os.path.split(filepath)
+        self.filename, self.file_extension = os.path.splitext(file)
+        self.image = Image.open(filepath)
+        self.exif = process_file(open(filepath, 'rb'))
         for tag in self.get_tags:
-            setattr(self, self.get_tags[tag], str(tags[tag]))
+            assert tag in self.exif
+            setattr(self, self.get_tags[tag], str(self.exif[tag]))
+
+        self.width = 400
+
 
     @property
     def latex(self):
+        begining = r'\begin{figure}[h!]%'
+        end = r'\end{figure}%'
+
+        args = ','.join([self.width_latex, self.orientation_latex])
+        includegraphics = f'\\includegraphics[{args}]{{{self.path}\\{{{self.filename}}}{self.file_extension}}}%'
+
         # Prints the latex for each image. Images have a black border and caption
         # detailing the file name and date taken (as determined by exif data)
-        code = ''
-        code += '\\begin{figure}[ht!]'
-        code += '\n\\centering'
-        code += "\n{%"
-        code += "\n\\setlength{\\fboxsep}{0pt}%"
-        code += "\n\\setlength{\\fboxrule}{2pt}%"
-        code += "\n\\fbox{\\includegraphics[height=95mm]{" + self.path + "}}%"
-        code += "\n}%"
-        code += '\n\\caption{' + '\\texttt{[' + self.filepath_latex + ']}' + ' ' + self.timestamp.strftime('%d' + ' ' + self.timestamp.strftime('%B') + ' ' + self.timestamp.strftime('%Y') + '}')
-        code += '\n\\end{figure}'
-        return code
+        latex = '\n'.join([begining, includegraphics, end])
+        return latex
+        # code = ''
+        # code += '\\begin{figure}[ht!]'
+        # code += '\n\\centering'
+        # code += "\n{%"
+        # code += "\n\\setlength{\\fboxsep}{0pt}%"
+        # code += "\n\\setlength{\\fboxrule}{2pt}%"
+        # code += "\n\\fbox{\\includegraphics[height=95mm]{" + self.path + "}}%"
+        # code += "\n}%"
+        # code += '\n\\caption{' + '\\texttt{[' + self.filepath_latex + ']}' + ' ' + self.timestamp.strftime('%d' + ' ' + self.timestamp.strftime('%B') + ' ' + self.timestamp.strftime('%Y') + '}')
+        # code += '\n\\end{figure}'
+        # return code
+
+    @property
+    def orientation_latex(self):
+        match = tregex.name(self.rotation_pattern, self.orientation)
+        latex = 'angle={}'
+        direction = {'CW': -1, 'CCW': 1}
+        if match:
+            return latex.format(float(match[0]['angle']) * direction[match[0]['direction']])
+        else:
+            return ''
+
+    @property
+    def width_latex(self):
+        return 'width={}px'.format(self.width)
 
     @property
     def filepath_latex(self):
@@ -50,21 +84,39 @@ class Image:
     def timestamp(self):
         return datetime.strptime(self.timestampstr, '%Y:%m:%d %H:%M:%S')
 
+    @staticmethod
+    def rotate_original_image_according_to_orientation(self, image, orientation):
+        pass
 
-def load(search: str) -> List[Image]:
-    # Get all images (.JPG and .jpg in this example)
-    files = glob.glob(search)
-    # Can add more specific searches to existing search:
-    # files.extend(glob.glob("E:\Dropbox\Tobias\Programming\photobook\photobook\test\test_photos\*.JPG"))
 
-    if not files:
-        raise FileNotFoundError('No images where found with that search pattern.')
+class PhotoCollection:
+    def __init__(self, searches):
+        self.searches = searches
 
-    images = []
-    for file in files:
-        images += [Image(file)]
+        self.images = self.load(searches)
 
-    return images
+    @staticmethod
+    def load(searches: Union[List, str]) -> List[Photo]:
+        # Get all images (.JPG and .jpg in this example)
+        if isinstance(searches, str):
+            searches = [searches]
+
+        first = True
+        for search in searches:
+            if first:
+                files = glob.glob(search)
+                first = False
+            else:
+                files.extend(glob.glob(search))
+
+        if not files:
+            raise FileNotFoundError('No images where found with that search pattern.')
+
+        images = []
+        for file in files:
+            images += [Photo(file)]
+
+        return images
 
 
 # Returns value of specified exif field.
@@ -79,7 +131,7 @@ def get_comparator(filepath):
 
 
 def get_exif_data(filepath):
-    return Image.open(filepath)._getexif();
+    return Photo.open(filepath)._getexif();
 
 
 def get_timestamp(exif):

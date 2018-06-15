@@ -5,6 +5,7 @@ Create a formated pdf photobook from a resource of timestamped text and a collec
 Python packages:
 * pylatex
 * exifread
+* pillow
 
 Latex framework:
 * MiKTeX
@@ -16,3 +17,4 @@ Thoughts:
 * Find some example code of creating latex image entries from a collection of files. (done)
 * Figure out how to smoothly combine text resource and images.
 * Find a good shape for the resulting book, and somewhere to print and bind the book.
+* Figure out image rotation so that all images are correctly orientated in the resulting pdf.
