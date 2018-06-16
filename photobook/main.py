@@ -1,4 +1,4 @@
-from photobook.images import PhotoCollection
+from photobook.photos import PhotoCollection
 from pylatex import Document, Section, Figure, NoEscape, Package
 
 class Photobook:

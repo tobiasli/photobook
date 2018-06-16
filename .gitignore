@@ -6,3 +6,5 @@ __pycache__/
 *.tex
 .pytest_cache/
 *.pdf
+auxil/
+out/

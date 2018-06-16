@@ -1,4 +1,4 @@
-﻿"""
+"""
 -------------------------------------------------------------------------------
  Name:        tregex
  Purpose:     Wrapper that makes my everyday use of regex much smoother.
