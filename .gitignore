@@ -1,10 +1,14 @@
 ﻿## Ignore certain files in project.
 *.pyc
-.idea/
 __pycache__/
-.coverage
-*.tex
 .pytest_cache/
+.coverage
+
+## Pycharm
+.idea/
+
+## Latex
+*.tex
 *.pdf
 auxil/
 out/
