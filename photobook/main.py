@@ -1,6 +1,7 @@
 from photobook.photos import PhotoCollection
 from pylatex import Document, Section, Figure, NoEscape, Package
 
+
 class Photobook:
     def __init__(self, image_store:str, text_store:str=None) -> None:
         self.images = PhotoCollection(image_store).images
@@ -23,7 +24,7 @@ class Photobook:
 
     def generate_pdf(self, path, title) -> None:
         print('Generating pdf!')
-        doc = Document(title)
+        doc = Document(documentclass='book', document_options=['a4paper','11pt'])
         doc.packages.append(Package('graphicx'))
         doc.default_filepath = path
         with doc.create(Section('Section 1')):
