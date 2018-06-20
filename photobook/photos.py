@@ -50,26 +50,10 @@ class Photo:
     def latex(self):
         begining = r'\begin{figure}[h!]%'
         end = r'\end{figure}%'
-
         args = ','.join([arg for arg in [self.width_latex, self.orientation_latex] if arg])
-
         includegraphics = f'\\includegraphics[{args}]{{{self.convert_latex_path(self.path)}/{{{self.convert_latex_path(self.filename)}}}{self.file_extension}}}%'
-
-        # Prints the latex for each image. Images have a black border and caption
-        # detailing the file name and date taken (as determined by exif data)
         latex = '\n'.join([begining, includegraphics, end])
         return latex
-        # code = ''
-        # code += '\\begin{figure}[ht!]'
-        # code += '\n\\centering'
-        # code += "\n{%"
-        # code += "\n\\setlength{\\fboxsep}{0pt}%"
-        # code += "\n\\setlength{\\fboxrule}{2pt}%"
-        # code += "\n\\fbox{\\includegraphics[height=95mm]{" + self.path + "}}%"
-        # code += "\n}%"
-        # code += '\n\\caption{' + '\\texttt{[' + self.filepath_latex + ']}' + ' ' + self.timestamp.strftime('%d' + ' ' + self.timestamp.strftime('%B') + ' ' + self.timestamp.strftime('%Y') + '}')
-        # code += '\n\\end{figure}'
-        # return code
 
     @property
     def orientation_latex(self):
@@ -81,7 +65,7 @@ class Photo:
         angle = int(match[0]['angle'])
         direction = match[0]['direction']
         latex = 'angle={:d}'
-        direction_lookup = {'CW': lambda x: 360-x, None: lambda x: x}
+        direction_lookup = {'CW': lambda x: 360 - x, None: lambda x: x}
         if match:
             return latex.format(direction_lookup[direction](angle))
         else:
@@ -101,10 +85,12 @@ class Photo:
 
 
 class PhotoCollection:
-    def __init__(self, searches):
+    def __init__(self, searches: List[str] = None):
         self.searches = searches
-
-        self.images = self.load(searches)
+        if searches:
+            self.photos = self.load(searches)
+        else:
+            self.photos = list()
 
     @staticmethod
     def load(searches: Union[List, str]) -> List[Photo]:
@@ -128,6 +114,13 @@ class PhotoCollection:
             images += [Photo(file)]
 
         return images
+
+    def get_photos_from_period(self, period) -> List[Photo]:
+        """Get photos from a period. Start Include, end exclude."""
+        return [image for image in self.photos if period[0] <= image.timestamp < period[1]]
+
+    def __getitem__(self, key):
+        return self.photos[key]
 
 
 # Returns value of specified exif field.
