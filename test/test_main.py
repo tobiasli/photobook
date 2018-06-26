@@ -50,9 +50,12 @@ def test_photos():
 
 def test_PhotoCollection():
     collection = photos.PhotoCollection(r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg")
+    collection2 = photos.PhotoCollection(r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg")
 
-    assert [i.filepath for i in collection.get_photos_from_period([datetime(2018, 1, 1, 0, 0), datetime(2018, 3, 2, 0, 0)])] == ['E:\\Dropbox\\Tobias\\Programming\\photobook\\test\\bin\\2018-01-19-08.39.51.jpg', 'E:\\Dropbox\\Tobias\\Programming\\photobook\\test\\bin\\2018-02-28-09.12.22.jpg']
+    period = photos.Period(datetime(2018, 1, 1, 0, 0), datetime(2018, 3, 2, 0, 0))
+    assert [i.filepath for i in collection.get_photos_from_period(period)] == ['E:\\Dropbox\\Tobias\\Programming\\photobook\\test\\bin\\2018-01-19-08.39.51.jpg', 'E:\\Dropbox\\Tobias\\Programming\\photobook\\test\\bin\\2018-02-28-09.12.22.jpg']
 
+    assert 2*len(collection) == len(collection+collection2)
 
 def test_Text():
     match = """16.06.2018 21:00 Tobias
@@ -77,6 +80,10 @@ def test_TextCollection():
     file = r'E:\Dropbox\Tobias\Programming\photobook\test\bin\context.md'
 
     collection = photos.TextCollection(file)
+    collection2 = photos.TextCollection(file)
+
+    assert len(collection) == 3
+    assert 2*len(collection) == len(collection+collection2)
 
     assert collection.get_text_for_timestamp(datetime(2018, 2, 1, 0, 0, 0))[
                0].text == 'It was a really, really cold winter. Everything was covered in deep, white snow for months. Most winters were dark, but because of all the snow, this winter was bright and crisp and clean.'

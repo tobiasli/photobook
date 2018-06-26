@@ -23,10 +23,14 @@ class Period:
         self.end = end
 
     def __contains__(self, item: Union["Period", datetime]) -> bool:
-        if not self.start:
+        assert isinstance(item, (Period, datetime))
+        if not self.start or not self.end:
             return False
+        if isinstance(item, Period):
+            if not item.start or not item.end:
+                return False
         if isinstance(item, datetime):
-            return self.start <= item <= self.end
+            return self.start <= item < self.end
         elif isinstance(item, Period):
             return item.start in self or item.end in self
         else:
@@ -44,6 +48,16 @@ class Period:
         start = min([self.start, other.start])
         end = max([self.end, other.end])
         return Period(start, end)
+
+    def __str__(self) -> str:
+        return f'<Period: {self.start} {self.end}>'
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __iter__(self) -> List[datetime]:
+        yield self.start
+        yield self.end
 
 
 
@@ -83,7 +97,7 @@ class BookContent:
 
 
 class Text(BookContent):
-    dict_properties = ['timestamp', 'text', 'period', 'author']
+    dict_properties = ['written_date', 'text', 'period', 'author']
 
     def __init__(self, text: Union[List, str]) -> None:
         if isinstance(text, str):
@@ -92,7 +106,7 @@ class Text(BookContent):
             lines = text
 
         match = tregex.name('(?P<timestamp>\d.*\d) (?P<author>.*?)$', lines[0])[0]
-        self.timestamp = parse(match['timestamp'])
+        self.written_date = parse(match['timestamp'])
         self.author = match['author']
 
         contents = []
@@ -146,6 +160,7 @@ class TextCollection:
                                 collection = []
                         if line:
                             collection += [line]
+            self.text.append(Text(collection))
 
     def __contains__(self, item: Union[Text, "TextCollection"]) -> bool:
         assert isinstance(item, (Text, TextCollection))
@@ -166,11 +181,11 @@ class TextCollection:
     def get_text_for_timestamp(self, timestamp: datetime) -> List[Text]:
         return [text for text in self.text if timestamp in text.period]
 
-    def add_text(self, text: Union[Text, List[Text]]) -> None:
-        if not isinstance(text, list):
+    def add_text(self, text: Union[Text, List[Text], "TextCollection"]) -> None:
+        if not isinstance(text, Iterable):
             text = [text]
         self.text.extend(text)
-        self.text = sorted(self.text, lambda x: x.period.start)
+        self.text = sorted(self.text, key=lambda x: x.period.start)
 
     def __getitem__(self, key):
         return self.text[key]
@@ -181,6 +196,17 @@ class TextCollection:
 
     def __bool__(self) -> bool:
         return bool(self.text)
+
+    def __len__(self) -> int:
+        return len(self.text)
+
+    def __str__(self) -> str:
+        return str(self.strings)
+
+    def __add__(self, other) -> "TextCollection":
+        assert isinstance(other, TextCollection)
+        self.add_text(other)
+        return self
 
 
 class Photo(BookContent):
@@ -284,6 +310,7 @@ class PhotoCollection:
 
     def get_photos_from_period(self, period: Period) -> List[Photo]:
         """Get photos from a period. Start Include, end exclude."""
+        assert isinstance(period, Period)
         return [image for image in self.photos if image.timestamp in period]
 
     def __getitem__(self, key):
@@ -296,9 +323,17 @@ class PhotoCollection:
     def __bool__(self) -> bool:
         return bool(self.photos)
 
-    def add_photos(self, photos: List[Photo]) -> None:
+    def __len__(self) -> int:
+        return len(self.photos)
+
+    def add_photos(self, photos: Union[List[Photo], "PhotoCollection"]) -> None:
         self.photos.extend(photos)
-        self.photos = sorted(self.photos, lambda x: x.timestamp)
+        self.photos = sorted(self.photos, key=lambda x: x.timestamp)
+
+    def __add__(self, other) -> "PhotoCollection":
+        assert isinstance(other, PhotoCollection)
+        self.add_photos(other)
+        return self
 
 
 class Chapter:
@@ -312,83 +347,114 @@ class Chapter:
         if text:
             self.add_text(text)
 
-    def add_photos(self, photos: List[Photo]) -> None:
-        assert isinstance(photos, list)
+    def add_photos(self, photos: Union[List[Photo], Photo, PhotoCollection]) -> None:
+        assert isinstance(photos, (Iterable, Photo))
+        if not isinstance(photos, Iterable):
+            photos = [photos]
         self.photos.add_photos(photos)
 
-    def add_text(self, text: List[Text]) -> None:
-        assert isinstance(text, list)
+    def add_text(self, text: Union[List[Text], Text, TextCollection]) -> None:
+        assert isinstance(text, (Iterable, Text))
+        if not isinstance(text, Iterable):
+            text = [text]
         self.text.add_text(text)
 
     @property
-    def period(self) -> List[datetime]:
+    def period(self) -> Period:
         if self.text:
-            periods = list()
+            periods = Period()
             for text in self.text:
-                periods.extend(text.period)
-            return sum(periods)
+                periods += text.period
+            return periods
         elif self.photos:
             timestamps = [photo.timestamp for photo in self.photos]
             return Period(min(timestamps), max(timestamps))
         else:
-            return None
+            return Period()
+
+    @property
+    def timestamp(self) -> datetime:
+        return min(self.period)
+
+    def __bool__(self) -> bool:
+        return bool(self.photos) or bool(self.text)
+
+    def __str__(self) -> str:
+        return f'<Chapter: {str(self.period)}: {len(self.text)} texts and {len(self.photos)} photos.>'
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
-class Photobook:
+class Photobook:  # ChapterCollection
     def __init__(self, photo_store: str, text_store: str = None) -> None:
         self.photos = PhotoCollection(photo_store)
         self.text = TextCollection(text_store)
-        self.chapters = self.chapters_from_text_and_images()
+        self.chapters = list()
+        self.chapters_from_text_and_images()
 
-    def chapters_from_text_and_images(self) -> Chapter:
-        chapter = Chapter()
-        chapters = []
+    def show_contents(self) -> None:
+        for chapter in self.chapters:
+            print(chapter)
+
+    def add_chapters(self, chapters: Union[List[Chapter], Chapter]) -> None:
+        if not isinstance(chapters, list):
+            chapters = [chapters]
+        self.chapters.extend(chapters)
+        self.chapters = sorted(self.chapters, key=lambda x: x.timestamp)
+
+    def chapters_from_text_and_images(self) -> None:
         # Run through text and get all matching photos to create chapters.
         # Create chapters from photo-less text periods.
         # Create chapters from the remaining, unbroken periods of photos.
+        absolute_start = datetime(1, 1, 1)
+        absolute_end = datetime.now() + timedelta(days=1)
+        previous_period_end = absolute_start
 
-        last_period_end = datetime(0, 0, 0)
         text_chapters = []  # Combine all overlapping text into single chapters.
         current_chapter = []
+
+        # TODO: Figure out why I'm missing a text-chapter...
         for text in self.text:
             if not current_chapter:
                 current_chapter = Chapter(text=[text])
             elif text.period in current_chapter.period:
-                current_chapter.add_text([text])
-            elif text.period not in current_chapter.period:
+                current_chapter.add_text(text)
+            else:
                 text_chapters.append(current_chapter)
                 current_chapter = Chapter()
                 current_chapter.add_text(text)
+        text_chapters.append(current_chapter)
 
+        # Get photos for text chapters:
+        for text_chapter in text_chapters:
+            text_chapter.add_photos(self.photos.get_photos_from_period(text_chapter.period))
 
+        # Get photos for all intermittent periods:
+        photo_chapters = []
+        for text_chapter in text_chapters:
+            period = Period(previous_period_end, text_chapter.period.start)
 
-        for text in self.text:
-            # Create chapter up until first text:
-            textless_chapter = Chapter(photos=self.photos.get_photos_from_period(Period(start=last_period_end, end=text.period.start)))
-            chapters.append(textless_chapter)
+            photo_chapter = Chapter()
+            photo_chapter.add_photos(self.photos.get_photos_from_period(period))
+            if photo_chapter:
+                photo_chapters.append(photo_chapter)
 
-            # Chapter for first text:
-            Chapter(photos=self.photos.get_photos_from_period(text.period))
+            previous_period_end = text_chapter.period.end
 
+        # Get the photos from the end of last chapter and all the way forward:
+        period = Period(previous_period_end, absolute_end)
+        photo_chapter = Chapter()
+        photo_chapter.add_photos(self.photos.get_photos_from_period(period))
+        if photo_chapter:
+            photo_chapters.append(photo_chapter)
 
-        for photo in self.photos.photos:
-            matched_text = self.text.get_text_for_timestamp(photo.timestamp)
-            if matched_text:
-                if not chapter.text:
-                    chapter.text.add_text(matched_text[0])
-                if matched_text[0] in chapter.text:
-                    chapter.add_photos([photo])
-                else:
-                    # Matched text does not match previous chapter, starting new chapter.
-                    chapters.append(chapter)
-                    chapter.period
-                    chapter = Chapter(text=[matched_text[0]])
+        assert not self.chapters
+        self.add_chapters(text_chapters)
+        self.add_chapters(photo_chapters)
+        assert self.chapters
 
-        if not chapter.period:
-            abs(1)
-        chapters.append(chapter)
-
-        return chapters
+        abs(1)
 
     def create_tex(self, doc):
         print('Generating latex!')
