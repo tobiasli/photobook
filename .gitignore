@@ -13,3 +13,4 @@ __pycache__/
 auxil/
 out/
 test/output/
+!album_test*.tex
