@@ -29,10 +29,11 @@ class Period:
         if isinstance(item, Period):
             if not item.start or not item.end:
                 return False
+
         if isinstance(item, datetime):
             return self.start <= item < self.end
         elif isinstance(item, Period):
-            return item.start in self or item.end in self
+            return self.start <= item.start < self.end and self.start < item.end <= self.end
         else:
             raise TypeError('Period.__contains__ only accepts Period or datetime objects')
 
@@ -59,7 +60,9 @@ class Period:
         yield self.start
         yield self.end
 
-
+    def __eq__(self, other: "Period") -> bool:
+        assert isinstance(other, Period)
+        return self.start == other.start and self.end == other.end
 
 class BookContent:
     contents = []
@@ -409,31 +412,38 @@ class Photobook:  # ChapterCollection
         # Create chapters from the remaining, unbroken periods of photos.
         absolute_start = datetime(1, 1, 1)
         absolute_end = datetime.now() + timedelta(days=1)
-        previous_period_end = absolute_start
 
         text_chapters = []  # Combine all overlapping text into single chapters.
         current_chapter = []
 
         # TODO: Figure out why I'm missing a text-chapter...
         for text in self.text:
-            if not current_chapter:
-                current_chapter = Chapter(text=[text])
-            elif text.period in current_chapter.period:
-                current_chapter.add_text(text)
-            else:
-                text_chapters.append(current_chapter)
-                current_chapter = Chapter()
-                current_chapter.add_text(text)
-        text_chapters.append(current_chapter)
+            found_matching_period = False
+            for chapter in text_chapters:
+                if text.period in chapter.period:
+                    chapter.add_text([text])
+                    found_matching_period = True
+                    break
+            # If no overlapping periods are found, add text as new chapter:
+            if not found_matching_period:
+                text_chapters.append(Chapter(text=[text]))
 
         # Get photos for text chapters:
         for text_chapter in text_chapters:
             text_chapter.add_photos(self.photos.get_photos_from_period(text_chapter.period))
 
-        # Get photos for all intermittent periods:
+        # Create chapters for photos in intermittent periods:
+        previous_period_end = absolute_start
         photo_chapters = []
         for text_chapter in text_chapters:
             period = Period(previous_period_end, text_chapter.period.start)
+
+            for chapter in photo_chapters:
+                if period in chapter.period:
+                    abs(1)
+            for chapter in text_chapters:
+                if period in chapter.period:
+                    abs(1)
 
             photo_chapter = Chapter()
             photo_chapter.add_photos(self.photos.get_photos_from_period(period))
@@ -453,8 +463,6 @@ class Photobook:  # ChapterCollection
         self.add_chapters(text_chapters)
         self.add_chapters(photo_chapters)
         assert self.chapters
-
-        abs(1)
 
     def create_tex(self, doc):
         print('Generating latex!')
