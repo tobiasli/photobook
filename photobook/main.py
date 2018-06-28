@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import os
 import glob
 from collections import Iterable
+import math
 
 from pylatex import Document, Section, Figure, NoEscape, Package
 from exifread import process_file
@@ -18,7 +19,7 @@ def parse(string: str) -> datetime:
 
 
 class Period:
-    def __init__(self, start: datetime=None, end: datetime=None) -> None:
+    def __init__(self, start: datetime = None, end: datetime = None) -> None:
         self.start = start
         self.end = end
 
@@ -37,7 +38,7 @@ class Period:
         else:
             raise TypeError('Period.__contains__ only accepts Period or datetime objects')
 
-    def __add__(self, other:"Period") -> "Period":
+    def __add__(self, other: "Period") -> "Period":
         assert isinstance(other, Period)
         if not self.start and not other.start:
             return Period()
@@ -63,6 +64,7 @@ class Period:
     def __eq__(self, other: "Period") -> bool:
         assert isinstance(other, Period)
         return self.start == other.start and self.end == other.end
+
 
 class BookContent:
     contents = []
@@ -230,8 +232,6 @@ class Photo(BookContent):
             assert tag in self.exif
             setattr(self, self.get_tags[tag], str(self.exif[tag]))
 
-        self.width = 200
-
     @staticmethod
     def create_args(args):
         return
@@ -246,7 +246,7 @@ class Photo(BookContent):
     def latex(self):
         begining = r'\begin{figure}[!h]%'
         end = r'\end{figure}%'
-        args = ','.join([arg for arg in [self.width_latex, self.orientation_latex] if arg])
+        args = ','.join([arg for arg in [self.orientation_latex] if arg])
         includegraphics = f'\\includegraphics[{args}]{{{self.convert_latex_path(self.path)}/{{{self.convert_latex_path(self.filename)}}}{self.file_extension}}}%'
         latex = '\n'.join([begining, includegraphics, end])
         return latex
@@ -255,21 +255,21 @@ class Photo(BookContent):
     def orientation_latex(self):
         return self.orientation_translator(self.orientation)
 
-    @staticmethod
-    def orientation_translator(orientation):
-        match = tregex.name('(?:Rotated)? (?P<angle>\d+(?:.\d+)?) ?(?P<direction>\w+)?', orientation)
-        angle = int(match[0]['angle'])
-        direction = match[0]['direction']
+    def orientation_translator(self, orientation):
+        orientation = self.orientation_lookup(orientation)
         latex = 'angle={:d}'
         direction_lookup = {'CW': lambda x: 360 - x, None: lambda x: x}
-        if match:
-            return latex.format(direction_lookup[direction](angle))
+        if orientation:
+            return latex.format(direction_lookup[orientation['direction']](orientation['angle']))
         else:
             return ''
 
-    @property
-    def width_latex(self):
-        return 'width={}px'.format(self.width)
+    def orientation_lookup(self, orientation):
+        match = tregex.name('(?:Rotated)? (?P<angle>\d+(?:.\d+)?) ?(?P<direction>\w+)?', orientation)
+        if not match:
+            return {}
+        else:
+            return {'angle': int(match[0]['angle']), 'direction': match[0]['direction']}
 
     @property
     def filepath_latex(self):
@@ -278,6 +278,30 @@ class Photo(BookContent):
     @property
     def timestamp(self):
         return datetime.strptime(self.timestampstr, '%Y:%m:%d %H:%M:%S')
+
+    @property
+    def shape(self) -> str:
+        """Return a simple 'portrait', 'landscape' or 'square' depending on the images actual orientation"""
+
+        shift = {'portrait': 'landscape', 'landscape': 'portrait', 'square': 'square'}
+
+        if self.width == self.height:
+            shape = 'square'
+        elif self.width > self.height:
+            shape = 'landscape'
+        elif self.width < self.height:
+            shape = 'portrait'
+
+        orientation = self.orientation_lookup(self.orientation)
+        if not orientation:
+            shift_from_original = 0
+        else:
+            shift_from_original = math.fmod(orientation['angle'], 180)
+
+        if shift_from_original:
+            shape = shift[shape]
+
+        return shape
 
 
 class PhotoCollection:

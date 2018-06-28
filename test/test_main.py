@@ -46,9 +46,11 @@ def test_photos():
     assert img[0].orientation_translator('Rotated 180') == 'angle=180'
 
     correct_latex = r'''\begin{figure}[!h]%
-\includegraphics[width=200px,angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}%
+\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}%
 \end{figure}%'''
     assert img[0].latex == correct_latex
+
+    assert [i.shape for i in img]==['portrait', 'portrait', 'landscape', 'landscape']
 
 def test_PhotoCollection():
     collection = photobook.PhotoCollection(r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg")
