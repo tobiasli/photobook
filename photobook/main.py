@@ -246,10 +246,14 @@ class Photo(BookContent):
     def latex(self):
         begining = r'\begin{figure}[!h]%'
         end = r'\end{figure}%'
-        args = ','.join([arg for arg in [self.orientation_latex] if arg])
-        includegraphics = f'\\includegraphics[{args}]{{{self.convert_latex_path(self.path)}/{{{self.convert_latex_path(self.filename)}}}{self.file_extension}}}%'
-        latex = '\n'.join([begining, includegraphics, end])
+        latex = '\n'.join([begining, self.includegraphics+';', end])
         return latex
+
+    @property
+    def includegraphics_latex(self) -> str:
+        args = ','.join([arg for arg in [self.orientation_latex] if arg])
+        includegraphics = f'\\includegraphics[{args}]{{{self.convert_latex_path(self.path)}/{{{self.convert_latex_path(self.filename)}}}{self.file_extension}}}'
+        return includegraphics
 
     @property
     def orientation_latex(self):
