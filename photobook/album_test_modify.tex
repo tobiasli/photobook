@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage[svgnames]{xcolor}% additional colors by name
 \usepackage{tikz}
+\usepackage{graphicx}
 \usepackage[screen,nopanel]{pdfscreen}
 
 % \margins{.5in}{.5in}{.5in}{.5in}
@@ -25,6 +26,7 @@
             \end{tikzpicture}
         \end{center}
     \end{slide}
+    \clearpage
     \begin{slide}% vertically center
         \small
         \begin{center}
@@ -38,15 +40,27 @@
             \end{tikzpicture}
         \end{center}
     \end{slide}
+    \clearpage
     \begin{slide}% vertically center
         \small
         \begin{center}
             \begin{tikzpicture}[remember picture,overlay]
                 %
-                \node[anchor=east] at (current page.east) {\resizebox{2cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
-                \node[anchor=center] at (current page.center) {\resizebox{2cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
-                \node[anchor=west] at (current page.west) {\resizebox{2cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
+                \node[anchor=east] at (current page.east) {\resizebox{3in}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
+                \node[anchor=center] at (current page.center) {\resizebox{3in}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
+                \node[anchor=west] at (current page.west) {\resizebox{3in}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
 
+            \end{tikzpicture}
+        \end{center}
+    \end{slide}
+    \clearpage
+    \begin{slide}
+        \small
+        \begin{center}
+            \begin{tikzpicture}[remember picture,overlay]
+                \node[anchor=east] at (current page.east){\resizebox{8cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
+                \node[anchor=center] at (current page.center){\resizebox{8cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-02-28-09.12.22}.jpg}}};
+                \node[anchor=west] at (current page.west){\resizebox{8cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
             \end{tikzpicture}
         \end{center}
     \end{slide}
