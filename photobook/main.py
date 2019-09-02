@@ -44,7 +44,7 @@ class Period:
             return Period()
         elif not self.start:
             return other
-        elif not self.other:
+        elif not other:
             return self
 
         start = min([self.start, other.start])
@@ -62,7 +62,8 @@ class Period:
         yield self.end
 
     def __eq__(self, other: "Period") -> bool:
-        assert isinstance(other, Period)
+        if not isinstance(other, Period):
+            return False
         return self.start == other.start and self.end == other.end
 
 
@@ -102,7 +103,7 @@ class BookContent:
 
 
 class Text(BookContent):
-    dict_properties = ['written_date', 'text', 'period', 'author']
+    dict_properties = ('written_date', 'text', 'period', 'author')
 
     def __init__(self, text: Union[List, str]) -> None:
         if isinstance(text, str):
@@ -246,7 +247,7 @@ class Photo(BookContent):
     def latex(self):
         begining = r'\begin{figure}[!h]%'
         end = r'\end{figure}%'
-        latex = '\n'.join([begining, self.includegraphics+';', end])
+        latex = '\n'.join([begining, self.includegraphics_latex+';', end])
         return latex
 
     @property

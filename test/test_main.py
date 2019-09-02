@@ -46,7 +46,7 @@ def test_photos():
     assert img[0].orientation_translator('Rotated 180') == 'angle=180'
 
     correct_latex = r'''\begin{figure}[!h]%
-\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}%
+\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg};
 \end{figure}%'''
     assert img[0].latex == correct_latex
 
@@ -70,9 +70,9 @@ def test_Text():
 It was a really, really cold winter. Everything was covered in deep, white snow for months. Most winters were dark, but because of all the snow, this winter was bright and crisp and clean."""
 
     result = {
-        'timestamp': datetime(2018, 6, 16, 21, 0, 0),
+        'written_date': datetime(2018, 6, 16, 21, 0, 0),
         'author': 'Tobias',
-        'period': [datetime(2018, 1, 1, 0, 0, 0), datetime(2018, 3, 2, 0, 0, 0)],
+        'period': photobook.Period(datetime(2018, 1, 1, 0, 0, 0), datetime(2018, 3, 2, 0, 0, 0)),
         'text': 'It was a really, really cold winter. Everything was covered in deep, white snow for months. Most winters were dark, but because of all the snow, this winter was bright and crisp and clean.'}
 
     text = photobook.Text(match)

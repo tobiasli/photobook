@@ -98,9 +98,11 @@ class L3P(Template):  # Landscape page, 3 Portraits
     accepts = ['portrait', 'portrait', 'portrait']
 
     def latex(self) -> str:
+        forced_width = self.page.width_division(3)
         image_width_str = f'{self.page.width_division(3):n}{self.page.unit}'
         lines = []
         for photo, place in zip(self.photos, ['east', 'center', 'west']):
+            self.fit_photo_to_page(photo=photo, forced_width=forced_width)
             lines.append(
                 f'\\node[anchor={place}] at (current page.{place})' + f'{{\\resizebox{{{image_width_str}}}{{!}}' + f'{{{photo.includegraphics_latex}}}}};')
 
