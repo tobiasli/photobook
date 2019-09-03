@@ -86,6 +86,7 @@ def test_content_finder_nested():
 
     file_finder = model.FileFinder(sub_content_finders=[title_finder])
 
-    content = file_finder.search_stream(stream)
+    file = file_finder.parse_file(stream)
     # TODO: Figure out why i can't find subtitles.
-    assert content.get_contents_by_type(SubTitle)[0].subtitle == ' This is another title.'
+    assert file.get_contents_by_type(SubTitle)[0].subtitle == 'This is a subtitle.'
+    assert file.get_contents_by_type(SubTitle)[0].contents[0].text == 'with subtitle contents.'
