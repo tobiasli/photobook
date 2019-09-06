@@ -1,7 +1,8 @@
 """Tests for the model compontents of the photo book."""
 import re
+import os
 
-import photobook.model as model
+import photobook.parsing as model
 import photobook.readers as readers
 
 SIMPLE_TEXT = """This is a test.
@@ -90,3 +91,14 @@ def test_content_finder_nested():
     # TODO: Figure out why i can't find subtitles.
     assert file.get_contents_by_type(SubTitle)[0].subtitle == 'This is a subtitle.'
     assert file.get_contents_by_type(SubTitle)[0].contents[0].text == 'with subtitle contents.'
+
+
+def test_content_finder_integration():
+    """Test using the actual format of the photobook entries."""
+    path = os.path.split(__file__)[0]
+    file = os.path.join(path, 'bin', 'context.md')
+
+    reader = readers.FileReader(filepath=file, encoding='utf-8')
+
+
+
