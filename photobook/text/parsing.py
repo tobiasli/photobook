@@ -3,7 +3,7 @@ import typing as ty
 import re
 import logging
 
-from photobook.readers import TextStream
+from photobook.text.readers import TextStream
 
 
 class Content:
@@ -39,9 +39,10 @@ class ContentFinder:
         self.start_pattern = start_pattern
         self.end_pattern = end_pattern
         self.content_type = content_type
+        # TODO: sub_content_finders need more robust communication of end_pattern from parent.
         self.sub_content_finders = sub_content_finders if sub_content_finders else list()
 
-    def search_stream(self, stream: TextStream, rematch_on_start=False, stop_at_new_start=True) -> Content:
+    def search_stream(self, stream: TextStream, rematch_on_start=False, stop_at_new_start=True, end_patterns: ty.Sequence[ty.Pattern] = None) -> Content:
         """Start a sequential search through a text stream.
 
         Args:
@@ -51,10 +52,15 @@ class ContentFinder:
             stop_at_new_start: When encountering a new start_pattern before end_pattern is met, do we want to break
                 or just continue parsing?
         """
+        if not end_patterns:
+            end_patterns = list()
+        end_patterns.insert(0, self.end_pattern)
+
         content = None
         while True:
             line = stream.get_line()
             if line is None:
+                print(f'{self.content_type} Stop at None line')
                 break
             else:
                 if not content:
@@ -65,12 +71,21 @@ class ContentFinder:
                         content = self.content_type(**properties)
                         if not self.sub_content_finders:
                             # If there are no nested levels below this Content, we are done!
+                            print(f'{self.content_type}:{self.start_pattern.pattern}: Stop at content with no sub-content.')
                             break
                         if rematch_on_start:
                             stream.backtrack_reader_number_of_lines(1)  # If rematch_on_start, reset pointer to read last line again.
                 else:
-                    if self.end_pattern and self.end_pattern.match(line):
+                    if self.end_pattern and any(end_pattern.match(line) for end_pattern in end_patterns):
                         # We are done here!
+                        print(f'{self.content_type}:{self.end_pattern.pattern}: Stop at end_pattern.')
+                        break
+                    elif stop_at_new_start and self.start_pattern.match(line):
+                        # Assumes that reaching a start_pattern again means end of current ant start of new.
+                        # So we are done here, and need to parse current line again.
+                        # Only works if no end-pattern is set.
+                        stream.backtrack_reader_number_of_lines(1)
+                        print(f'{self.content_type}:{self.start_pattern.pattern}: Stop at new start.')
                         break
                     elif self.sub_content_finders:  # We now go looking for sub_content.
                         for sub in self.sub_content_finders:
@@ -78,14 +93,8 @@ class ContentFinder:
                                 # Backtrack stream to reevaluate current line, and send the stream into the sub_finder
                                 # that matched.
                                 stream.backtrack_reader_number_of_lines(1)
-                                sub_content = sub.search_stream(stream)
+                                sub_content = sub.search_stream(stream, end_patterns=end_patterns)
                                 content.add_content(sub_content)
-                    elif stop_at_new_start and self.start_pattern.match(line):
-                        # Assumes that reaching a start_pattern again means end of current ant start of new.
-                        # So we are done here, and need to parse current line again.
-                        # Only works if no end-pattern is set.
-                        stream.backtrack_reader_number_of_lines(1)
-                        break
 
         return content
 
@@ -106,18 +115,3 @@ class FileFinder(ContentFinder):
         """Given a specific TextStream, parse the contents according to the given sub_content_finders of this particular
         file."""
         return self.search_stream(stream=stream, rematch_on_start=True, stop_at_new_start=False)
-
-
-class TextEntry:
-    author: str
-    timestamp: "Timestamp"
-    period: "Period"
-    text: str
-
-
-class Timestamp:
-    pass
-
-
-class Period:
-    pass

@@ -1,10 +1,12 @@
 from datetime import datetime
+
+import diary.data_model
 from photobook import main as photobook
 
 def test_Period():
-    period1 = photobook.Period(datetime(2018, 1, 1), datetime(2018, 2, 1))
-    period2 = photobook.Period(datetime(2018, 1, 15), datetime(2018, 2, 15))
-    period3 = photobook.Period(datetime(2018, 3, 1), datetime(2018, 4, 1))
+    period1 = diary.data_model.Period(datetime(2018, 1, 1), datetime(2018, 2, 1))
+    period2 = diary.data_model.Period(datetime(2018, 1, 15), datetime(2018, 2, 15))
+    period3 = diary.data_model.Period(datetime(2018, 3, 1), datetime(2018, 4, 1))
 
     periodA = period1+period2
     assert periodA.start == datetime(2018, 1, 1) and periodA.end == datetime(2018, 2, 15)
@@ -19,10 +21,10 @@ def test_Photobook():
     assert len(book.chapters) == 4
 
     # Check chapters:
-    assert book.chapters[0].period == photobook.Period(datetime(2018, 1, 1), datetime(2018, 3, 2))
-    assert book.chapters[1].period == photobook.Period(datetime(2018, 4, 8, 9, 24, 39), datetime(2018, 4, 8, 9, 24, 39))
-    assert book.chapters[2].period == photobook.Period(datetime(2018, 5, 17), datetime(2018, 5, 18))
-    assert book.chapters[3].period == photobook.Period(datetime(2018, 5, 31), datetime(2018, 6, 1))
+    assert book.chapters[0].period == diary.data_model.Period(datetime(2018, 1, 1), datetime(2018, 3, 2))
+    assert book.chapters[1].period == diary.data_model.Period(datetime(2018, 4, 8, 9, 24, 39), datetime(2018, 4, 8, 9, 24, 39))
+    assert book.chapters[2].period == diary.data_model.Period(datetime(2018, 5, 17), datetime(2018, 5, 18))
+    assert book.chapters[3].period == diary.data_model.Period(datetime(2018, 5, 31), datetime(2018, 6, 1))
 
 
     pdf_name = ''
@@ -56,7 +58,7 @@ def test_PhotoCollection():
     collection = photobook.PhotoCollection(r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg")
     collection2 = photobook.PhotoCollection(r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg")
 
-    period = photobook.Period(datetime(2018, 1, 1, 0, 0), datetime(2018, 3, 2, 0, 0))
+    period = diary.data_model.Period(datetime(2018, 1, 1, 0, 0), datetime(2018, 3, 2, 0, 0))
     assert [i.filepath for i in collection.get_photos_from_period(period)] == ['E:\\Dropbox\\Tobias\\Programming\\photobook\\test\\bin\\2018-01-19-08.39.51.jpg', 'E:\\Dropbox\\Tobias\\Programming\\photobook\\test\\bin\\2018-02-28-09.12.22.jpg']
 
     assert 2*len(collection) == len(collection+collection2)
@@ -72,7 +74,7 @@ It was a really, really cold winter. Everything was covered in deep, white snow 
     result = {
         'written_date': datetime(2018, 6, 16, 21, 0, 0),
         'author': 'Tobias',
-        'period': photobook.Period(datetime(2018, 1, 1, 0, 0, 0), datetime(2018, 3, 2, 0, 0, 0)),
+        'period': diary.data_model.Period(datetime(2018, 1, 1, 0, 0, 0), datetime(2018, 3, 2, 0, 0, 0)),
         'text': 'It was a really, really cold winter. Everything was covered in deep, white snow for months. Most winters were dark, but because of all the snow, this winter was bright and crisp and clean.'}
 
     text = photobook.Text(match)

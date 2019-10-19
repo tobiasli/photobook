@@ -26,9 +26,16 @@ class FileReader(Reader, metaclass=ReaderMeta):
     """Simple reader for reading file contents."""
     def __init__(self, filepath: str, encoding: str) -> None:
         self.stream = codecs.open(filename=filepath, encoding=encoding)
+        self.lines = self.stream.readlines()
 
     def _read_line(self) -> str:
-        return self.stream.readline()
+        if not self.lines:
+            self.stream.close()
+            line = None
+        else:
+            line = self.lines.pop(0)
+
+        return line
 
 
 class StringReader(Reader, metaclass=ReaderMeta):
@@ -67,7 +74,6 @@ class TextStream:
             new_line = self.reader.read_line()
 
         self.history.append(new_line)
-
         return new_line
 
     def get_previous_line(self) -> str:

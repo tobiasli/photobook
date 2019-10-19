@@ -247,7 +247,7 @@ class DateParse(object):
         self.referenceDate = None
         self.string = ''
 
-    def parse(self, stringIn, debugMode=False, referenceDate=None, full_text=False):
+    def parse(self, stringIn, debugMode=False, referenceDate=None, full_text=False) -> datetime.datetime:
         '''
         (stringIn = string, debugMode = boolean/False)
         Takes any string and checks if it can find any valid dates within. Variable
