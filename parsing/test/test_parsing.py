@@ -2,8 +2,8 @@
 import re
 import os
 
-import photobook.text.parsing as model
-import photobook.text.readers as readers
+import parsing.parsing as model
+import parsing.readers as readers
 
 FILENAME = os.path.join(os.path.split(__file__)[0], 'bin', 'context.md')
 
@@ -99,16 +99,16 @@ def test_content_finder_nested():
                                        content_type=Title,
                                        sub_content_finders=[subtitle_finder, text_finder])
 
-    file_finder = model.FileFinder(sub_content_finders=[title_finder])
+    file_finder = model.Parser(finders=[title_finder])
 
-    file = file_finder.parse_file(stream)
+    file = file_finder.parse_stream(stream)
     # TODO: Figure out why i can't find subtitles.
     assert file.get_contents_by_type(SubTitle)[0].subtitle == 'This is a subtitle.'
     assert file.get_contents_by_type(SubTitle)[0].contents[0].text == 'with subtitle contents.'
 
 
 def test_content_finder_integration():
-    """Test using the actual format of the photobook entries."""
+    """Test using the actual format of the old entries."""
     path = os.path.split(__file__)[0]
     file = os.path.join(path, 'bin', 'context.md')
 

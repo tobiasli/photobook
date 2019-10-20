@@ -58,7 +58,7 @@ class TextStream:
     def __init__(self, reader: Reader) -> None:
         self.reader = reader
         self.history = collections.deque(maxlen=100)  # The reader can backtrack 100 lines of text.
-        self.read_backlog = list()  # The read backlog is always emptied before fetching a new line from self.reader.
+        self.read_backlog = list()  # The read backlog is always emptied before fetching a book line from self.reader.
         self.index = 0
 
     def backtrack_reader_number_of_lines(self, number: ty.Optional[int] = 1) -> None:

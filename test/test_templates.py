@@ -1,5 +1,5 @@
-from photobook.templates import L3P, Page
-from photobook import main as photobook
+from old.templates import L3P, Page
+from old import implementation as photobook
 
 def test_L3P():
     photos = photobook.PhotoCollection(r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg")
@@ -14,9 +14,9 @@ def test_L3P():
 \small
 \begin{center}
 \begin{tikzpicture}[remember picture,overlay]
-\node[anchor=east] at (current page.east){\resizebox{8cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
-\node[anchor=center] at (current page.center){\resizebox{8cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-02-28-09.12.22}.jpg}}};
-\node[anchor=west] at (current page.west){\resizebox{8cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/photobook/test/bin/{2018-01-19-08.39.51}.jpg}}};
+\node[anchor=east] at (current page.east){\resizebox{8cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/old/test/bin/{2018-01-19-08.39.51}.jpg}}};
+\node[anchor=center] at (current page.center){\resizebox{8cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/old/test/bin/{2018-02-28-09.12.22}.jpg}}};
+\node[anchor=west] at (current page.west){\resizebox{8cm}{!}{\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/old/test/bin/{2018-01-19-08.39.51}.jpg}}};
 \end{tikzpicture}
 \end{center}
 \end{slide}

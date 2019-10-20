@@ -1,8 +1,9 @@
-import datetime
 import re
 
-from photobook.text.parsing import Content, ContentFinder
-from photobook.dateparse import parser
+import typing as ty
+
+from parsing.parsing import Content, ContentFinder
+from old.dateparse import parse
 
 
 class Text(Content):
@@ -36,12 +37,14 @@ class Entry(Content):
 
     @property
     def period(self) -> str:
-        """Get the relevant time period for the current diary entry."""
+        """Get the relevant time period for the current diary entry.
+        Rules:
+            Always returns an actual time period. """
         # noinspection PyUnresolvedReferences
-        return next((t.period for t in self.get_contents_by_type(Period)))
+        return next((t.period for t in self.get_contents_by_type(Period)), None)
 
 
-ENTRY_PATTERN = re.compile(r'^# ?(?P<_timestamp>\d+\.\d+\.\d+(?:\W\d+:\d+))\W+(?P<_title>\w.*?)$')
+ENTRY_PATTERN = re.compile(r'^# ?(?P<timestamp>\d+\.\d+\.\d+(?:\W\d+:\d+))\W+(?P<title>\w.*?)$')
 ENTRY_FINDER = ContentFinder(start_pattern=ENTRY_PATTERN,
                              content_type=Entry,
                              sub_content_finders=[TEXT_FINDER, PERIOD_FINDER]

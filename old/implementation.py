@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Sequence
 from datetime import datetime, timedelta
 import os
 import glob
@@ -10,13 +10,63 @@ from exifread import process_file
 from pylatex.utils import escape_latex
 from PIL import Image
 
-from diary.data_model import Period
-from photobook import tregex
-from photobook.dateparse import parse as dateparse
+from old import tregex
+from old.dateparse import parse as dateparse
+
+ACCEPTED_IMAGE_TYPES = ['jpg', 'jpeg']
 
 
 def parse(string: str) -> datetime:
     return dateparse(string, full_text=True)
+
+
+class Period:
+    def __init__(self, start: datetime = None, end: datetime = None) -> None:
+        self.start = start
+        self.end = end
+
+    def __contains__(self, item: Union["Period", datetime]) -> bool:
+        assert isinstance(item, (Period, datetime))
+        if not self.start or not self.end:
+            return False
+        if isinstance(item, Period):
+            if not item.start or not item.end:
+                return False
+
+        if isinstance(item, datetime):
+            return self.start <= item < self.end
+        elif isinstance(item, Period):
+            return self.start <= item.start < self.end and self.start < item.end <= self.end
+        else:
+            raise TypeError('Period.__contains__ only accepts Period or datetime objects')
+
+    def __add__(self, other: "Period") -> "Period":
+        assert isinstance(other, Period)
+        if not self.start and not other.start:
+            return Period()
+        elif not self.start:
+            return other
+        elif not other:
+            return self
+
+        start = min([self.start, other.start])
+        end = max([self.end, other.end])
+        return Period(start, end)
+
+    def __str__(self) -> str:
+        return f'<Period: {self.start} {self.end}>'
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __iter__(self) -> List[datetime]:
+        yield self.start
+        yield self.end
+
+    def __eq__(self, other: "Period") -> bool:
+        if not isinstance(other, Period):
+            return False
+        return self.start == other.start and self.end == other.end
 
 
 class BookContent:
@@ -112,7 +162,7 @@ class TextCollection:
                     collection = []
                     for line in text:
                         if line[0] == '#':
-                            # Finish previous collection and start new
+                            # Finish previous collection and start book
                             if collection:
                                 self.text.append(Text(collection))
                                 collection = []
@@ -262,7 +312,7 @@ class Photo(BookContent):
 
 
 class PhotoCollection:
-    def __init__(self, searches: List[str] = None):
+    def __init__(self, searches: Sequence[str] = None):
         self.searches = searches
 
         self.photos = list()
@@ -270,18 +320,15 @@ class PhotoCollection:
             self.add_photos(self.load(searches))
 
     @staticmethod
-    def load(searches: Union[List, str]) -> List[Photo]:
+    def load(searches: Union[Sequence[str], str]) -> List[Photo]:
         # Get all images (.JPG and .jpg in this example)
         if isinstance(searches, str):
             searches = [searches]
 
-        first = True
+        files = list()
         for search in searches:
-            if first:
-                files = glob.glob(search)
-                first = False
-            else:
-                files.extend(glob.glob(search))
+            for type in ACCEPTED_IMAGE_TYPES:
+                files.extend(glob.glob(os.path.join(search, f'*.{type}')))
 
         if not files:
             raise FileNotFoundError('No images where found with that search pattern.')
@@ -371,7 +418,7 @@ class Chapter:
 
 
 class Photobook:  # ChapterCollection
-    def __init__(self, photo_store: str, text_store: str = None) -> None:
+    def __init__(self, photo_store: Sequence[str], text_store: str = None) -> None:
         self.photos = PhotoCollection(photo_store)
         self.text = TextCollection(text_store)
         self.chapters = list()
@@ -405,7 +452,7 @@ class Photobook:  # ChapterCollection
                     chapter.add_text([text])
                     found_matching_period = True
                     break
-            # If no overlapping periods are found, add text as new chapter:
+            # If no overlapping periods are found, add text as book chapter:
             if not found_matching_period:
                 text_chapters.append(Chapter(text=[text]))
 

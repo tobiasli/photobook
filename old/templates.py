@@ -1,6 +1,6 @@
 from typing import List
 
-from photobook.main import PhotoCollection, TextCollection, Photo
+from old.implementation import PhotoCollection, TextCollection, Photo
 
 """
 Templates take a set of photos and text and create a page layout. 

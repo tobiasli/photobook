@@ -1,9 +1,9 @@
-"""This file contains the base classes used for representing photobook contents."""
+"""This file contains the base classes used for representing old contents."""
 import typing as ty
 import re
 import logging
 
-from photobook.text.readers import TextStream
+from parsing.readers import TextStream
 
 
 class Content:
@@ -49,7 +49,7 @@ class ContentFinder:
             stream: The text information scanned for model contents.
             rematch_on_start: When the current ContentFinder finds a match for start at current line, do we want to
                 re-evaluate the current line for the subcontent?
-            stop_at_new_start: When encountering a new start_pattern before end_pattern is met, do we want to break
+            stop_at_new_start: When encountering a book start_pattern before end_pattern is met, do we want to break
                 or just continue parsing?
         """
         if not end_patterns:
@@ -81,11 +81,11 @@ class ContentFinder:
                         print(f'{self.content_type}:{self.end_pattern.pattern}: Stop at end_pattern.')
                         break
                     elif stop_at_new_start and self.start_pattern.match(line):
-                        # Assumes that reaching a start_pattern again means end of current ant start of new.
+                        # Assumes that reaching a start_pattern again means end of current ant start of book.
                         # So we are done here, and need to parse current line again.
                         # Only works if no end-pattern is set.
                         stream.backtrack_reader_number_of_lines(1)
-                        print(f'{self.content_type}:{self.start_pattern.pattern}: Stop at new start.')
+                        print(f'{self.content_type}:{self.start_pattern.pattern}: Stop at book start.')
                         break
                     elif self.sub_content_finders:  # We now go looking for sub_content.
                         for sub in self.sub_content_finders:
@@ -99,19 +99,19 @@ class ContentFinder:
         return content
 
 
-class File(Content):
+class Text(Content):
     """Simplest possible content for the data in an entire file."""
 
 
-class FileFinder(ContentFinder):
+class Parser(ContentFinder):
     """Content finder for matching the entire contents of a File."""
 
-    def __init__(self, sub_content_finders: ty.Optional[ty.Sequence["ContentFinder"]] = None) -> None:
-        super(FileFinder, self).__init__(start_pattern=re.compile('^.'),
-                                         content_type=File,
-                                         sub_content_finders=sub_content_finders)
+    def __init__(self, finders: ty.Optional[ty.Sequence["ContentFinder"]] = None) -> None:
+        super(Parser, self).__init__(start_pattern=re.compile('^.'),
+                                     content_type=Text,
+                                     sub_content_finders=finders)
 
-    def parse_file(self, stream: TextStream) -> Content:
+    def parse_stream(self, stream: TextStream) -> Content:
         """Given a specific TextStream, parse the contents according to the given sub_content_finders of this particular
         file."""
         return self.search_stream(stream=stream, rematch_on_start=True, stop_at_new_start=False)
