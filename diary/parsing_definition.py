@@ -1,9 +1,6 @@
 import re
 
-import typing as ty
-
 from parsing.parsing import Content, ContentFinder
-from old.dateparse import parse
 
 
 class Text(Content):

@@ -7,6 +7,21 @@ import math
 from exifread import process_file
 from PIL import Image as PILImage
 
+import pylatex as pl
+
+Number = ty.Union[int, float]
+
+
+def create_latex_path(path: str) -> str:
+    """Latex paths for includegraphics need forward slashes instead of windows native backward slashes."""
+    # Use curly brackets to scape excess dots in name.
+    directory, filename = os.path.split(path)
+    file, ext = os.path.splitext(filename)
+    path = f'{{{directory}/{file}}}{ext}'
+    path = path.replace("_", "\_")
+    path = path.replace('\\', '/')
+    return path
+
 
 class Title:
     text: str
@@ -27,11 +42,15 @@ class Image:
                 'EXIF ExifImageWidth': 'width',
                 'EXIF ExifImageLength': 'height',
                 'Image Orientation': 'orientation'}
-
-    dict_properties = ['filepath', 'width', 'height', 'orientation', 'timestamp']
+    path: str
+    directory: str
+    timestampstr: str
+    width: Number
+    height: Number
+    orientation: str
 
     def __init__(self, path) -> None:
-        self.path = path
+        self.path: str = path
         self.directory, file = os.path.split(path)
         self.filename, self.file_extension = os.path.splitext(file)
         self.image = PILImage.open(path)
@@ -39,10 +58,6 @@ class Image:
         for tag in self.get_tags:
             assert tag in self.exif
             setattr(self, self.get_tags[tag], str(self.exif[tag]))
-
-    @staticmethod
-    def create_args(args):
-        return
 
     @staticmethod
     def convert_latex_path(path):
@@ -64,8 +79,14 @@ class Image:
         return includegraphics
 
     @property
-    def orientation_latex(self):
+    def orientation_latex(self) -> str:
+        """Return orientation as a latex argument."""
         return self.orientation_translator(self.orientation)
+
+    @property
+    def orientation_numeric(self) -> Number:
+        """Return orientation as a degree from 0 to 360."""
+        return self.orientation_lookup(self.orientation)['angle']
 
     def orientation_translator(self, orientation):
         orientation = self.orientation_lookup(orientation)
@@ -84,8 +105,9 @@ class Image:
             return {'angle': int(match[0]['angle']), 'direction': match[0]['direction']}
 
     @property
-    def filepath_latex(self):
-        return (os.path.basename(self.directory)).replace("_", "\_");
+    def path_latex(self):
+        """Create a latex valid file path"""
+        return create_latex_path(self.path)
 
     @property
     def timestamp(self):
@@ -127,7 +149,7 @@ class Chapter:
 class Book:
     chapters: ty.List[Chapter]
 
-    def __init__(self, *, title) -> None:
+    def __init__(self, *, title: Title) -> None:
         """A book contains a title and one or more chapters."""
         self.title = title
         self.chapters = list()
@@ -136,5 +158,45 @@ class Book:
         """Add chapters to book."""
         self.chapters.extend(chapters)
 
+    @staticmethod
+    def _create_doc(path: str = None) -> pl.Document:
+        """Create a working Document from Book structure."""
+        doc = pl.Document(documentclass='book', document_options=['a4paper', '11pt'])
+        doc.packages.append(pl.Package('graphicx'))
+        return doc
+
+    def _add_preamble(self, doc: pl.Document) -> pl.Document:
+        """Add preamble."""
+        doc.preamble.append(pl.Command('title', 'Awesome Title'))
+        doc.preamble.append(pl.Command('author', 'Anonymous author'))
+        doc.preamble.append(pl.Command('date', pl.NoEscape(r'\today')))
+        doc.append(pl.NoEscape(r'\maketitle'))
+        return doc
+
+    @staticmethod
+    def _add_chapters_to_doc(doc: pl.Document, chapters: ty.Sequence[Chapter]) -> pl.Document:
+        """Add Chapters to book as Sections."""
+        for chapter in chapters:
+            doc.create(pl.Section(chapter.title.text))
+            doc.append(chapter.text.text)
+            for i, image in enumerate(chapter.images):
+                with doc.create(pl.Figure(position='h!')) as figure:
+                    figure.add_image(image.path)#, width='400px')
+                    # figure.add_caption(f'Image nr {i} taken {image.timestampstr}')
+        return doc
+
+    def _export_doc(self, doc: pl.Document, path: str) -> None:
+        """Export pdf document of book."""
+        doc.generate_pdf(path)
+        doc.generate_tex(path)
 
 
+    def _create_tex(self, doc):
+        print('Generating latex!')
+        with doc.create(Section('The year 2018')):
+            doc.append('Here are some cool images from 2018!')
+            for i, image in enumerate(self.photos.photos):
+                with doc.create(Figure(position='h!')) as figure:
+                    figure.add_image(image.filepath, width='400px')
+                    figure.add_caption(f'Image nr {i} taken {image.timestampstr}')
+        return doc

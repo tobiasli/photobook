@@ -3,7 +3,7 @@ import os
 import pytest
 import datetime
 
-from diary import parsing
+from diary import parsing_definition
 from parsing import readers
 from parsing.parsing import Parser, Content
 
@@ -16,7 +16,7 @@ def model() -> Content:
     stream = readers.TextStream(reader=readers.FileReader(filepath=FILENAME, encoding='utf-8'))
 
     # Get the model that the contents of stream should match:
-    parser = Parser(finders=[parsing.ENTRY_FINDER])
+    parser = Parser(finders=[parsing_definition.ENTRY_FINDER])
 
     # Use model to parse stream:
     c = parser.parse_stream(stream=stream)
@@ -29,14 +29,14 @@ def test_basic_structure(model):
 
 
 def test_timestamp(model):
-    entry = model.get_contents_by_type(parsing.Entry)[0]
+    entry = model.get_contents_by_type(parsing_definition.Entry)[0]
     assert isinstance(entry.timestamp, str)
     assert entry.timestamp == datetime.datetime(2018, 6, 16, 21, 00, 00)
 
 
 def test_period(model):
     """This entry does not have a specified time period, so the timestamp is floored and padded with 24 hours."""
-    entry = model.get_contents_by_type(parsing.Entry)[2]
+    entry = model.get_contents_by_type(parsing_definition.Entry)[2]
     assert entry.period[0] == datetime.datetime(2018, 6, 16)
     assert entry.period[1] == datetime.datetime(2018, 6, 17)
 

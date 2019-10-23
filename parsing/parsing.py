@@ -5,6 +5,8 @@ import logging
 
 from parsing.readers import TextStream
 
+class ParsingError(Exception):
+    pass
 
 class Content:
     contents: ty.List['Content'] = None
@@ -57,10 +59,12 @@ class ContentFinder:
         end_patterns.insert(0, self.end_pattern)
 
         content = None
+        line = stream.get_line()
+        if not line:
+            raise ParsingError(f'No content in stream {type(stream)}')
         while True:
-            line = stream.get_line()
+
             if line is None:
-                print(f'{self.content_type} Stop at None line')
                 break
             else:
                 if not content:
@@ -95,7 +99,7 @@ class ContentFinder:
                                 stream.backtrack_reader_number_of_lines(1)
                                 sub_content = sub.search_stream(stream, end_patterns=end_patterns)
                                 content.add_content(sub_content)
-
+            line = stream.get_line()
         return content
 
 

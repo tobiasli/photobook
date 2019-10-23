@@ -4,9 +4,10 @@ import os
 from datetime import datetime, timedelta
 import typing as ty
 
-from diary import parsing
+from diary import parsing_definition
 from book import model
 from old.dateparse import parse
+from book.model import Image, create_latex_path
 
 
 ACCEPTED_IMAGE_TYPES = ['jpg', 'jpeg']
@@ -90,11 +91,13 @@ class ImageCollection:
 
 
 class DiaryChapter:
-    def __init__(self, parsed: parsing.Entry) -> None:
-        self._title = parsed.title
-        self._timestamp = parsed.timestamp
-        self._period = parsed.period
-        self.text = parsed.text
+    def __init__(self, entry: parsing_definition.Entry) -> None:
+        """Take the results of a parsed diary entry and build an actual DiaryChapter."""
+        self.title = entry.title
+        self._timestamp = entry.timestamp
+        self._period = entry.period
+        self.text = entry.text
+        self.images: ty.List[Image] = list()
 
     @property
     def timestamp(self) -> datetime:
@@ -120,3 +123,14 @@ class DiaryChapter:
         datetimes[1] = datetimes[1] + timedelta(days=1)
 
         return Period(*datetimes)
+
+    def add_images(self, images: ty.Sequence[Image]) -> None:
+        """Add images to diary."""
+        self.images.extend(images)
+
+    def to_book_chapter(self) -> model.Chapter:
+        """Convert the Diary Chapter to a Book-chapter"""
+        return model.Chapter(
+            title=model.Title(self.title),
+            text=model.Text(self.text),
+            images=self.images)
