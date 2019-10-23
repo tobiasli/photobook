@@ -13,7 +13,7 @@ def test_Period():
     assert periodB.start == datetime(2018, 1, 15) and periodB.end == datetime(2018, 4, 1)
 
 def test_Photobook():
-    book = photobook.Photobook(photo_store=r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg", text_store=r'E:\Dropbox\Tobias\Programming\photobook\test\bin\context.md')
+    book = photobook.Photobook(photo_store=r"path\*.jpg", text_store=r'path\context.md')
     assert len(book.photos.photos) == 4
     assert len(book.text.text) == 3
     assert len(book.chapters) == 4
@@ -28,14 +28,14 @@ def test_Photobook():
     pdf_name = ''
     # book.generate_pdf2(path=r'E:\Dropbox\Tobias\Programming\old\test\output\test_main_pylatex', title=pdf_name)
     # book.generate_pdf(path=r'E:\Dropbox\Tobias\Programming\old\test\output\test_main', title=pdf_name)
-    book.generate_pdf_from_chapters(path=r'E:\Dropbox\Tobias\Programming\photobook\test\output\test_main', title=pdf_name)
+    book.generate_pdf_from_chapters(path=r'path\test_main', title=pdf_name)
 
     #shutil.rmtree(os.path.join(pdf_path, pdf_name+'.pdf'))
     pass
 
 
 def test_photos():
-    img = photobook.PhotoCollection.load(r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg")
+    img = photobook.PhotoCollection.load(r"path\*.jpg")
 
     assert len(img) == 4
     assert isinstance(img[0], photobook.Photo)
@@ -46,18 +46,18 @@ def test_photos():
     assert img[0].orientation_translator('Rotated 180') == 'angle=180'
 
     correct_latex = r'''\begin{figure}[!h]%
-\includegraphics[angle=270]{E:/Dropbox/Tobias/Programming/old/test/bin/{2018-01-19-08.39.51}.jpg};
+\includegraphics[angle=270]{path/{2018-01-19-08.39.51}.jpg};
 \end{figure}%'''
     assert img[0].latex == correct_latex
 
     assert [i.shape for i in img]==['portrait', 'portrait', 'landscape', 'landscape']
 
 def test_PhotoCollection():
-    collection = photobook.PhotoCollection(r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg")
-    collection2 = photobook.PhotoCollection(r"E:\Dropbox\Tobias\Programming\photobook\test\bin\*.jpg")
+    collection = photobook.PhotoCollection(r"path\*.jpg")
+    collection2 = photobook.PhotoCollection(r"path\*.jpg")
 
     period = photobook.Period(datetime(2018, 1, 1, 0, 0), datetime(2018, 3, 2, 0, 0))
-    assert [i.filepath for i in collection.get_photos_from_period(period)] == ['E:\\Dropbox\\Tobias\\Programming\\old\\test\\bin\\2018-01-19-08.39.51.jpg', 'E:\\Dropbox\\Tobias\\Programming\\old\\test\\bin\\2018-02-28-09.12.22.jpg']
+    assert [i.filepath for i in collection.get_photos_from_period(period)] == ['path\\2018-01-19-08.39.51.jpg', 'E:\\Dropbox\\Tobias\\Programming\\old\\test\\bin\\2018-02-28-09.12.22.jpg']
 
     assert 2*len(collection) == len(collection+collection2)
 
@@ -81,7 +81,7 @@ It was a really, really cold winter. Everything was covered in deep, white snow 
 
 
 def test_TextCollection():
-    file = r'E:\Dropbox\Tobias\Programming\photobook\test\bin\context.md'
+    file = r'path\context.md'
 
     collection = photobook.TextCollection(file)
     collection2 = photobook.TextCollection(file)
