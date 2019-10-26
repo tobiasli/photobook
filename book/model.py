@@ -3,6 +3,8 @@ from datetime import datetime
 import os
 import tregex
 import math
+import tempfile
+from shutil import copyfile
 
 from exifread import process_file
 from PIL import Image as PILImage
@@ -12,15 +14,25 @@ import pylatex as pl
 Number = ty.Union[int, float]
 
 
+class MyRandomSequence(tempfile._RandomNameSequence):
+    """Create a custom character set for tempfile"""
+    characters = "abcdefghijklmnopqrstuvwxyz1234567890"
+
+
+tempfile._name_sequence = MyRandomSequence()
+
+
 def create_latex_path(path: str) -> str:
     """Latex paths for includegraphics need forward slashes instead of windows native backward slashes."""
     # Use curly brackets to scape excess dots in name.
-    directory, filename = os.path.split(path)
-    file, ext = os.path.splitext(filename)
-    path = f'{{{directory}/{file}}}{ext}'
-    path = path.replace("_", "\_")
+    # directory, filename = os.path.split(path)
+    # file, ext = os.path.splitext(filename)
+    # path = f'"{{{directory}/{file}}}{ext}"'
     path = path.replace('\\', '/')
+    # path = path.replace("_", "\_")
     return path
+
+
 
 
 class Title:
@@ -38,10 +50,14 @@ class Text:
 
 
 class Image:
-    get_tags = {'EXIF DateTimeOriginal': 'timestampstr',
-                'EXIF ExifImageWidth': 'width',
-                'EXIF ExifImageLength': 'height',
-                'Image Orientation': 'orientation'}
+    get_tags = {
+        'EXIF DateTimeOriginal': 'timestampstr',
+        'Image XResolution': 'width',
+        'Image YResolution': 'height',
+        'EXIF ExifImageWidth': 'width',
+        'EXIF ExifImageLength': 'height',
+        'Image Orientation': 'orientation'
+    }
     path: str
     directory: str
     timestampstr: str
@@ -52,12 +68,17 @@ class Image:
     def __init__(self, path) -> None:
         self.path: str = path
         self.directory, file = os.path.split(path)
-        self.filename, self.file_extension = os.path.splitext(file)
+        self.filename, file_extension = os.path.splitext(file)
+        self.file_extension = file_extension.lower()
         self.image = PILImage.open(path)
         self.exif = process_file(open(path, 'rb'))
         for tag in self.get_tags:
-            assert tag in self.exif
-            setattr(self, self.get_tags[tag], str(self.exif[tag]))
+            if tag in self.exif:
+                setattr(self, self.get_tags[tag], str(self.exif[tag]))
+            else:
+                setattr(self, self.get_tags[tag], None)
+
+        self.temp_copy_path = None
 
     @staticmethod
     def convert_latex_path(path):
@@ -91,13 +112,16 @@ class Image:
     def orientation_translator(self, orientation):
         orientation = self.orientation_lookup(orientation)
         latex = 'angle={:d}'
-        direction_lookup = {'CW': lambda x: 360 - x, None: lambda x: x}
+        direction_lookup = {'CW': lambda x: 360 - x, 'CCW': lambda x: x, None: lambda x: x}
         if orientation:
             return latex.format(direction_lookup[orientation['direction']](orientation['angle']))
         else:
             return ''
 
     def orientation_lookup(self, orientation):
+        if not orientation:
+            return {'angle': 0, 'direction': 'CW'}
+
         match = tregex.to_dict('(?:Rotated)? (?P<angle>\d+(?:.\d+)?) ?(?P<direction>\w+)?', orientation)
         if not match:
             return {}
@@ -105,12 +129,12 @@ class Image:
             return {'angle': int(match[0]['angle']), 'direction': match[0]['direction']}
 
     @property
-    def path_latex(self):
+    def path_latex(self) -> str:
         """Create a latex valid file path"""
         return create_latex_path(self.path)
 
     @property
-    def timestamp(self):
+    def timestamp(self) -> datetime:
         return datetime.strptime(self.timestampstr, '%Y:%m:%d %H:%M:%S')
 
     @property
@@ -123,7 +147,7 @@ class Image:
             shape = 'square'
         elif self.width > self.height:
             shape = 'landscape'
-        elif self.width < self.height:
+        else:  # self.width < self.height:
             shape = 'portrait'
 
         orientation = self.orientation_lookup(self.orientation)
@@ -136,6 +160,27 @@ class Image:
             shape = shift[shape]
 
         return shape
+
+    def create_temp_copy(self):
+        """Create a tempfile copy of the image to clean up any naming issues with the image file."""
+        self.cleanup_temp_copy()
+
+        self.temp_copy_path = tempfile.NamedTemporaryFile(
+            prefix='bookimage'+self.timestamp.strftime('%Y%m%d%H%M%S'),
+            suffix=self.file_extension).name
+        copyfile(self.path, self.temp_copy_path)
+
+    def get_temp_copy_path(self) -> str:
+        """Return the path to the temp copy file."""
+        return create_latex_path(self.temp_copy_path)
+
+    def cleanup_temp_copy(self) -> None:
+        """Delete the temp copy file."""
+        if self.temp_copy_path:
+            if os.path.exists(self.temp_copy_path):
+                os.remove(self.temp_copy_path)
+            self.temp_copy_path = None
+
 
 
 class Chapter:
@@ -158,45 +203,12 @@ class Book:
         """Add chapters to book."""
         self.chapters.extend(chapters)
 
-    @staticmethod
-    def _create_doc(path: str = None) -> pl.Document:
-        """Create a working Document from Book structure."""
-        doc = pl.Document(documentclass='book', document_options=['a4paper', '11pt'])
-        doc.packages.append(pl.Package('graphicx'))
-        return doc
+    @property
+    def images(self) -> ty.List[Image]:
+        """Return a list of all images from all chapters."""
+        return [image for chapter in self.chapters for image in chapter.images]
 
-    def _add_preamble(self, doc: pl.Document) -> pl.Document:
-        """Add preamble."""
-        doc.preamble.append(pl.Command('title', 'Awesome Title'))
-        doc.preamble.append(pl.Command('author', 'Anonymous author'))
-        doc.preamble.append(pl.Command('date', pl.NoEscape(r'\today')))
-        doc.append(pl.NoEscape(r'\maketitle'))
-        return doc
-
-    @staticmethod
-    def _add_chapters_to_doc(doc: pl.Document, chapters: ty.Sequence[Chapter]) -> pl.Document:
-        """Add Chapters to book as Sections."""
-        for chapter in chapters:
-            doc.create(pl.Section(chapter.title.text))
-            doc.append(chapter.text.text)
-            for i, image in enumerate(chapter.images):
-                with doc.create(pl.Figure(position='h!')) as figure:
-                    figure.add_image(image.path)#, width='400px')
-                    # figure.add_caption(f'Image nr {i} taken {image.timestampstr}')
-        return doc
-
-    def _export_doc(self, doc: pl.Document, path: str) -> None:
-        """Export pdf document of book."""
-        doc.generate_pdf(path)
-        doc.generate_tex(path)
-
-
-    def _create_tex(self, doc):
-        print('Generating latex!')
-        with doc.create(Section('The year 2018')):
-            doc.append('Here are some cool images from 2018!')
-            for i, image in enumerate(self.photos.photos):
-                with doc.create(Figure(position='h!')) as figure:
-                    figure.add_image(image.filepath, width='400px')
-                    figure.add_caption(f'Image nr {i} taken {image.timestampstr}')
-        return doc
+    def temp_cleanup(self) -> None:
+        """Delete all temporary files generated."""
+        for image in self.images:
+            image.cleanup_temp_copy()

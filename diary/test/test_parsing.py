@@ -31,12 +31,12 @@ def test_basic_structure(model):
 def test_timestamp(model):
     entry = model.get_contents_by_type(parsing_definition.Entry)[0]
     assert isinstance(entry.timestamp, str)
-    assert entry.timestamp == datetime.datetime(2018, 6, 16, 21, 00, 00)
+    assert entry.timestamp == '16.06.2018 21:00'
 
 
 def test_period(model):
     """This entry does not have a specified time period, so the timestamp is floored and padded with 24 hours."""
-    entry = model.get_contents_by_type(parsing_definition.Entry)[2]
-    assert entry.period[0] == datetime.datetime(2018, 6, 16)
-    assert entry.period[1] == datetime.datetime(2018, 6, 17)
+    entries = model.get_contents_by_type(parsing_definition.Entry)
+    assert entries[0].period == '01.01.2018-01.03.2018'
+    assert entries[2].period == '2018.05.31'
 

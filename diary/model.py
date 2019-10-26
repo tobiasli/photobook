@@ -6,9 +6,8 @@ import typing as ty
 
 from diary import parsing_definition
 from book import model
-from old.dateparse import parse
-from book.model import Image, create_latex_path
-
+from parsing.dateparse import parse
+from book.model import Image
 
 ACCEPTED_IMAGE_TYPES = ['jpg', 'jpeg']
 
@@ -67,7 +66,11 @@ class Period:
 
 class ImageCollection:
     """Class for handling a collection of images, and able to return images based on period queries."""
-    images: ty.List[model.Image]
+    _images: ty.List[model.Image]
+
+    @property
+    def images(self) -> ty.List[Image]:
+        return sorted(self._images, key=lambda im: im.timestamp)
 
     def load_images_from_path(self, path: str) -> None:
         """Search a specific path, and add all found images to ImageCollection."""
@@ -82,7 +85,7 @@ class ImageCollection:
         for file in files:
             images += [model.Image(file)]
 
-        self.images = images
+        self._images = images
 
     def get_photos_from_period(self, period: Period) -> ty.List[model.Image]:
         """Get photos from a period. Start Include, end exclude."""
@@ -102,6 +105,10 @@ class DiaryChapter:
     @property
     def timestamp(self) -> datetime:
         return parse(self._timestamp)
+
+    @property
+    def timestamp_str(self) -> str:
+        return self._timestamp
 
     @property
     def period(self) -> Period:
@@ -131,6 +138,6 @@ class DiaryChapter:
     def to_book_chapter(self) -> model.Chapter:
         """Convert the Diary Chapter to a Book-chapter"""
         return model.Chapter(
-            title=model.Title(self.title),
+            title=model.Title(f'{self.timestamp_str} - {self.title}'),
             text=model.Text(self.text),
             images=self.images)

@@ -60,7 +60,7 @@ class ContentFinder:
 
         content = None
         line = stream.get_line()
-        if not line:
+        if line is None:
             raise ParsingError(f'No content in stream {type(stream)}')
         while True:
 
@@ -75,7 +75,7 @@ class ContentFinder:
                         content = self.content_type(**properties)
                         if not self.sub_content_finders:
                             # If there are no nested levels below this Content, we are done!
-                            print(f'{self.content_type}:{self.start_pattern.pattern}: Stop at content with no sub-content.')
+                            # print(f'{self.content_type}:{self.start_pattern.pattern}: Stop at content with no sub-content.')
                             break
                         if rematch_on_start:
                             stream.backtrack_reader_number_of_lines(1)  # If rematch_on_start, reset pointer to read last line again.

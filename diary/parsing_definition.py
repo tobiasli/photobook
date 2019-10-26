@@ -30,7 +30,7 @@ class Entry(Content):
     def text(self) -> str:
         """Concat all matched text below this level."""
         # noinspection PyUnresolvedReferences
-        return '\n'.join([t.text for t in self.get_contents_by_type(Text)])
+        return '\n\n'.join([t.text for t in self.get_contents_by_type(Text)])
 
     @property
     def period(self) -> str:

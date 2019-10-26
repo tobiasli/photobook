@@ -1,20 +1,16 @@
 # photobook
 Create a formated pdf photobook from a resource of timestamped text and a collection of photos.
 
+The package contains, for the time being, **parsing**, **book** and **diary**.
+
+* ```parsing``` is for creating a model structure from the contents of a text file.
+* ```book``` contains a basic model for a book, a chapter and images, along with a framework for creating latex representations of this model.
+* ```diary``` is a specific implementation of parsing and book for creating a pdf based on diary text file and a folder full of images.
+
 # Requirements
 Python packages:
 * pylatex
 * exifread
-* pillow
 
 Latex framework:
 * MiKTeX
-* strawberryperl
-
-
-Thoughts:
-* Find a suitable latex formated file to use as starting point.
-* Find some example code of creating latex image entries from a collection of files. (done)
-* Figure out how to smoothly combine text resource and images.
-* Find a good shape for the resulting book, and somewhere to print and bind the book.
-* Figure out image rotation so that all images are correctly orientated in the resulting pdf.

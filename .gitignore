@@ -11,7 +11,4 @@ __pycache__/
 *.tex
 *.pdf
 auxil/
-out/
-test/output/
-!album_test*.tex
 *.synctex*
