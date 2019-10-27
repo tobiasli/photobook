@@ -4,19 +4,18 @@ import pytest
 import datetime
 
 from diary import parsing_definition
-from parsing import readers
-from parsing.parsing import Parser, Content
+from fileparse import parse, read
 
 FILENAME = os.path.join(os.path.split(__file__)[0], 'bin', 'context.md')
 
 
 @pytest.fixture()
-def model() -> Content:
+def model() -> parse.Content:
     # Get the text stream we want to parse:
-    stream = readers.TextStream(reader=readers.FileReader(filepath=FILENAME, encoding='utf-8'))
+    stream = read.TextStream(reader=read.FileReader(filepath=FILENAME, encoding='utf-8'))
 
     # Get the model that the contents of stream should match:
-    parser = Parser(finders=[parsing_definition.ENTRY_FINDER])
+    parser = parse.Parser(finders=[parsing_definition.ENTRY_FINDER])
 
     # Use model to parse stream:
     c = parser.parse_stream(stream=stream)

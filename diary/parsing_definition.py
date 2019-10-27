@@ -1,6 +1,6 @@
 import re
 
-from parsing.parsing import Content, ContentFinder
+from fileparse.parse import Content, ContentFinder
 
 
 class Text(Content):

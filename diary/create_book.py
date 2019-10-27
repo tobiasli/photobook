@@ -1,8 +1,7 @@
 import os
 
 from diary import parsing_definition
-from parsing import readers
-from parsing.parsing import Parser
+from fileparse import parse, read
 from diary.binders.pylatex import PylatexBinder
 import book.model as bm
 import diary.model as dm
@@ -19,8 +18,8 @@ def create_book(text_file: str, image_directory: str, output_filepath: str) -> N
     images.load_images_from_path(image_directory)
 
     # Get text model:
-    stream = readers.TextStream(reader=readers.FileReader(filepath=text_file, encoding='utf-8'))
-    parser = Parser(finders=[parsing_definition.ENTRY_FINDER])
+    stream = read.TextStream(reader=read.FileReader(filepath=text_file, encoding='utf-8'))
+    parser = parse.Parser(finders=[parsing_definition.ENTRY_FINDER])
     obj = parser.parse_stream(stream=stream)
 
     chapters = []
