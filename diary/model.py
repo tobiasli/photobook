@@ -6,7 +6,7 @@ import typing as ty
 
 from diary import parsing_definition
 from book import model
-from parsing.dateparse import parse
+import dateparse
 from book.model import Image
 
 ACCEPTED_IMAGE_TYPES = ['jpg', 'jpeg']
@@ -104,7 +104,7 @@ class DiaryChapter:
 
     @property
     def timestamp(self) -> datetime:
-        return parse(self._timestamp)
+        return dateparse.parse(self._timestamp)
 
     @property
     def timestamp_str(self) -> str:
@@ -116,9 +116,9 @@ class DiaryChapter:
         if self._period:
             if len(self._period) > 10:
                 dates = self._period.split('-')
-                datetimes = [parse(date) for date in dates]
+                datetimes = [dateparse.parse(date) for date in dates]
             else:
-                date = parse(self._period)
+                date = dateparse.parse(self._period)
                 datetimes = [date, date]
 
         else:
