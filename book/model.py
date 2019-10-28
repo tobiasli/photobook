@@ -33,8 +33,6 @@ def create_latex_path(path: str) -> str:
     return path
 
 
-
-
 class Title:
     text: str
 

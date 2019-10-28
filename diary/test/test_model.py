@@ -1,10 +1,12 @@
 """Test image components of diary book."""
 import os
+import pytest
 from datetime import datetime
 
-from diary import model
+from diary import model, parsing_definition
 
 FILEPATH = os.path.join(os.path.split(__file__)[0], 'bin')
+
 
 def test_period_construction():
     period1 = model.Period(datetime(2018, 1, 1), datetime(2018, 2, 1))
@@ -30,7 +32,7 @@ def test_period_addition():
     period2 = model.Period(datetime(2018, 1, 15), datetime(2018, 2, 15))
     period3 = model.Period(datetime(2018, 3, 1), datetime(2018, 4, 1))
 
-    periodA = period1+period2
+    periodA = period1 + period2
     assert periodA.start == datetime(2018, 1, 1) and periodA.end == datetime(2018, 2, 15)
 
     periodB = period2 + period3
@@ -52,3 +54,20 @@ def test_collection_get_from_period():
 
     assert len(images) == 2
     assert images[0].path == os.path.join(FILEPATH, '2018-02-28-09.12.22.jpg')
+
+
+@pytest.fixture()
+def chapter() -> model.DiaryChapter:
+    period = parsing_definition.Period(period='2019.1.1')
+    entry = parsing_definition.Entry(title='this is a title', timestamp='1.2.2019')
+    entry.add_content(period)
+    chap = model.DiaryChapter(entry=entry)
+    return chap
+
+
+def test_chapter_construction(chapter):
+    assert chapter
+
+
+def test_chapter_period(chapter):
+    assert chapter.period == model.Period(start=datetime(2019, 1, 1), end=datetime(2019, 1, 2))

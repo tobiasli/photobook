@@ -112,22 +112,15 @@ class DiaryChapter:
 
     @property
     def period(self) -> Period:
-
+        """Return a valid Period for this posts self._period."""
         if self._period:
-            if len(self._period) > 10:
-                dates = self._period.split('-')
-                datetimes = [dateparse.parse(date) for date in dates]
-            else:
-                date = dateparse.parse(self._period)
-                datetimes = [date, date]
-
+            datetimes = dateparse.parse(self._period)
+            if len(datetimes) == 1:
+                datetimes.append(datetimes[0] + timedelta(days=1))
         else:
             ts = self.timestamp
             datetimes = [ts.replace(hour=0, minute=0, second=0, microsecond=0),
-                         ts.replace(hour=0, minute=0, second=0, microsecond=0)]
-
-        # We define end-include by adding a day:
-        datetimes[1] = datetimes[1] + timedelta(days=1)
+                         ts.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)]
 
         return Period(*datetimes)
 

@@ -1,7 +1,6 @@
 """Testing specific parsing of diary files."""
 import os
 import pytest
-import datetime
 
 from diary import parsing_definition
 from fileparse import parse, read
