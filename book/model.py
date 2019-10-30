@@ -9,9 +9,11 @@ from shutil import copyfile
 from exifread import process_file
 from PIL import Image as PILImage
 
-import pylatex as pl
-
 Number = ty.Union[int, float]
+
+
+class BookModelError(Exception):
+    """Errors raise by the Book model."""
 
 
 class MyRandomSequence(tempfile._RandomNameSequence):
@@ -40,7 +42,11 @@ class Title:
         self.text = text
 
 
-class Text:
+class Content:
+    """Superclass identifying various content types we want to represent in a Chapter."""
+
+
+class Text(Content):
     text: str
 
     def __init__(self, text: str) -> None:
@@ -88,7 +94,7 @@ class Image:
     def latex(self):
         begining = r'\begin{figure}[!h]%'
         end = r'\end{figure}%'
-        latex = '\n'.join([begining, self.includegraphics_latex+';', end])
+        latex = '\n'.join([begining, self.includegraphics_latex + ';', end])
         return latex
 
     @property
@@ -164,7 +170,7 @@ class Image:
         self.cleanup_temp_copy()
 
         self.temp_copy_path = tempfile.NamedTemporaryFile(
-            prefix='bookimage'+self.timestamp.strftime('%Y%m%d%H%M%S'),
+            prefix='bookimage' + self.timestamp.strftime('%Y%m%d%H%M%S'),
             suffix=self.file_extension).name
         copyfile(self.path, self.temp_copy_path)
 
@@ -180,13 +186,64 @@ class Image:
             self.temp_copy_path = None
 
 
+class ImageSequence(Content):
+    """Class representing a sequence or group of images we want to show, in this particular order."""
+
+    def __init__(self, images: ty.Sequence[Image]) -> None:
+        for image in images:
+            if not isinstance(image, Image):
+                raise BookModelError(f'Can not add {type(image)} to {type(self)}. Must be {Image}.')
+        self.images = images
+
+
+ContentType = ty.Union[ImageSequence, Text]
+
+
+class ContentSequence:
+
+    def __init__(self, contents: ty.Sequence[ContentType] = None) -> None:
+        """Class for containing Contents."""
+        contents = contents if contents else list()
+        self.verify_content(contents)
+        self.contents = contents
+
+    def verify_content(self, contents: ty.Sequence[ContentType]) -> None:
+        """Check that all inputs are content."""
+        for content in contents:
+            if not isinstance(content, Content):
+                raise BookModelError(f'Can not add {type(content)} to {type(self)}. Must be subclass of {Content}.')
+
+    def add_contents(self, contents: ty.Sequence[ContentType]) -> None:
+        """Add contents to the Sequence."""
+        self.verify_content(contents)
+        self.contents.extend(contents)
+
+    @property
+    def text(self) -> ty.List[Text]:
+        """Return all text items in chapter."""
+        return [text for text in self.contents if isinstance(text, Text)]
+
+    @property
+    def images(self) -> ty.List[ImageSequence]:
+        """Return all image items in chapter."""
+        return [images for images in self.contents if isinstance(images, ImageSequence)]
+
 
 class Chapter:
-    def __init__(self, *, title: Title, text: Text, images: ty.Sequence[Image]) -> None:
+    def __init__(self, *, title: Title, contents: ContentSequence) -> None:
         """A chapter contains a title, text and may contain images."""
         self.title = title
-        self.text = text
-        self.images = images
+        self.contents: ContentSequence = contents
+
+    @property
+    def text(self) -> ty.List[Text]:
+        """Return the text components of the chapter."""
+        return self.contents.text
+
+    @property
+    def images(self) -> ty.List[ImageSequence]:
+        """Return the text components of the chapter."""
+        return self.contents.images
 
 
 class Book:
@@ -204,7 +261,8 @@ class Book:
     @property
     def images(self) -> ty.List[Image]:
         """Return a list of all images from all chapters."""
-        return [image for chapter in self.chapters for image in chapter.images]
+        return [image for chapter in self.chapters
+                for image_seq in chapter.images for image in image_seq.images]
 
     def temp_cleanup(self) -> None:
         """Delete all temporary files generated."""

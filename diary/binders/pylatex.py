@@ -5,6 +5,7 @@ from itertools import zip_longest
 import pylatex as pl
 
 from book.binder import BinderBase
+import book.model as bm
 
 
 class PylatexBinder(BinderBase):
@@ -26,36 +27,31 @@ class PylatexBinder(BinderBase):
         for chapter in self.book.chapters:
             # doc.create(pl.NewPage())
             with doc.create(pl.Section(title=chapter.title.text, numbering=False)):
-                doc.append(chapter.text.text)
+                for content in chapter.contents.contents:
+                    if isinstance(content, bm.Text):
+                        doc.append(content.text)
+                    elif isinstance(content, bm.ImageSequence):
+                        # Add images
+                        image_pairs = [(left, right) for left, right in zip_longest(content.images[::2], content.images[1::2])]
 
-                # Add images
-                image_pairs = [(left, right) for left, right in zip_longest(chapter.images[::2], chapter.images[1::2])]
+                        for pair in image_pairs:
+                            with doc.create(pl.LongTabu("X[c] X[c]")) as image_table:
+                                graphics = list()
+                                for image in pair:
+                                    if image:
+                                        image.create_temp_copy()
+                                        graphics.append(pl.StandAloneGraphic(filename=image.get_temp_copy_path(),
+                                                                             image_options=rf'width=\linewidth, {image.orientation_latex}'))
+                                    else:
+                                        graphics.append('')
 
-                for pair in image_pairs:
-                    with doc.create(pl.LongTabu("X[c] X[c]")) as image_table:
-                        graphics = list()
-                        for image in pair:
-                            if image:
-                                image.create_temp_copy()
-                                graphics.append(pl.StandAloneGraphic(filename=image.get_temp_copy_path(),
-                                                                     image_options=rf'width=\linewidth, {image.orientation_latex}'))
-                            else:
-                                graphics.append('')
-
-                        image_table.add_row(graphics)
+                                image_table.add_row(graphics)
 
         self.doc = doc
 
     def _export(self, path: str) -> str:
         """Export the document in pylatex."""
-        try:
-            import os
-            for image in self.book.images:
-                if not os.path.exists(image.get_temp_copy_path()):
-                    abs(1)
-            self.doc.generate_pdf(path)
-        except subprocess.CalledProcessError:
-            pass
+        self.doc.generate_pdf(path)
         # time.sleep(10)
         self.book.temp_cleanup()
         return path + '.pdf'

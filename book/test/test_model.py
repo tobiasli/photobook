@@ -26,13 +26,23 @@ def test_image_construction():
     assert obj.timestampstr == '2018:01:19 08:39:51'
 
 
+def test_image_sequence():
+    files = glob.glob(os.path.join(FILEPATH, '*.jpg'))
+    images = [m.Image(file) for file in files]
+    m.ImageSequence(images=images)
+
+
 def test_chapter_construction():
+    images = [m.Image(file) for file in glob.glob(os.path.join(FILEPATH, '*.jpg'))]
+    im_1 = m.ImageSequence(images[:2])
+    im_2 = m.ImageSequence(images[2:])
+    t_1 = m.Text('This is the first section.')
+    t_2 = m.Text('And we have a second one.')
     obj = m.Chapter(title=m.Title('test'),
-                    text=m.Text('This is a test'),
-                    images=[m.Image(i) for i in glob.glob(os.path.join(FILEPATH, '*.jpg'))])
+                    contents=[t_1, im_1, t_2, im_2])
     assert obj.title.text == 'test'
-    assert obj.text.text == 'This is a test'
-    assert os.path.split(obj.images[0].path)[1] == '2018-01-19-08.39.51.jpg'
+    assert obj.text[0].text == 'This is the first section.'
+    assert os.path.split(obj.images[0].images[0].path)[1] == '2018-01-19-08.39.51.jpg'
 
 
 def test_book_construction():
@@ -42,13 +52,10 @@ def test_book_construction():
 
 def test_book_chapter():
     chap = m.Chapter(title=m.Title('test'),
-                    text=m.Text('This is a test'),
-                    images=[m.Image(i) for i in glob.glob(os.path.join(FILEPATH, '*.jpg'))])
+                     contents=[m.Text('This is a test'), m.ImageSequence([m.Image(i) for i in glob.glob(os.path.join(FILEPATH, '*.jpg'))])])
     book = m.Book(title=m.Title('test'))
 
     book.add_chapters([chap, chap, chap])
 
     assert len(book.chapters) == 3
     assert len(book.images) == 12
-
-

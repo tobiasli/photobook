@@ -3,11 +3,11 @@ import glob
 import os
 from datetime import datetime, timedelta
 import typing as ty
+from itertools import zip_longest
 
 from diary import parsing_definition
-from book import model
+import book.model as bm
 import dateparse
-from book.model import Image
 
 ACCEPTED_IMAGE_TYPES = ['jpg', 'jpeg']
 
@@ -66,10 +66,10 @@ class Period:
 
 class ImageCollection:
     """Class for handling a collection of images, and able to return images based on period queries."""
-    _images: ty.List[model.Image]
+    _images: ty.List[bm.Image]
 
     @property
-    def images(self) -> ty.List[Image]:
+    def images(self) -> ty.List[bm.Image]:
         return sorted(self._images, key=lambda im: im.timestamp)
 
     def load_images_from_path(self, path: str) -> None:
@@ -83,11 +83,11 @@ class ImageCollection:
 
         images = []
         for file in files:
-            images += [model.Image(file)]
+            images += [bm.Image(file)]
 
         self._images = images
 
-    def get_photos_from_period(self, period: Period) -> ty.List[model.Image]:
+    def get_photos_from_period(self, period: Period) -> ty.List[bm.Image]:
         """Get photos from a period. Start Include, end exclude."""
         assert isinstance(period, Period)
         return [image for image in self.images if image.timestamp in period]
@@ -100,11 +100,11 @@ class DiaryChapter:
         self._timestamp = entry.timestamp
         self._period = entry.period
         self.text = entry.text
-        self.images: ty.List[Image] = list()
+        self.images: ty.List[bm.Image] = list()
 
     @property
     def timestamp(self) -> datetime:
-        return dateparse.parse(self._timestamp)
+        return dateparse.parse(self._timestamp)[0]
 
     @property
     def timestamp_str(self) -> str:
@@ -124,13 +124,41 @@ class DiaryChapter:
 
         return Period(*datetimes)
 
-    def add_images(self, images: ty.Sequence[Image]) -> None:
+    def add_images(self, images: ty.Sequence[bm.Image]) -> None:
         """Add images to diary."""
         self.images.extend(images)
 
-    def to_book_chapter(self) -> model.Chapter:
+    def to_book_chapter(self) -> bm.Chapter:
         """Convert the Diary Chapter to a Book-chapter"""
-        return model.Chapter(
-            title=model.Title(f'{self.timestamp_str} - {self.title}'),
-            text=model.Text(self.text),
-            images=self.images)
+        return bm.Chapter(
+            title=bm.Title(f'{self.timestamp_str} - {self.title}'),
+            contents=self.create_content_list())
+
+    def create_content_list(self) -> bm.ContentSequence:
+        """Take the text and images added to this chapter, and divide them into portions of content in a sequence."""
+
+        # Group images two and two:
+        image_pairs = [[left, right] for left, right in zip_longest(self.images[::2], self.images[1::2])]
+
+        # Divide text into sections:
+        text_sections = [t for t in self.text.split('\n') if t]
+
+        images_left = []
+        text_left = []
+        contents = bm.ContentSequence()
+        for text, image_pair in zip_longest(text_sections, image_pairs):
+            image_pair = [image for image in image_pair if image] if image_pair else list() # Pop Non-images if not a pair.
+            if not text:
+                images_left.extend(image_pair)
+            elif not image_pair:
+                text_left.append(text)
+            else:
+                contents.add_contents([bm.Text(text)])
+                contents.add_contents([bm.ImageSequence(image_pair)])
+
+        if images_left:
+            contents.add_contents([bm.ImageSequence(images_left)])
+        if text_left:
+            contents.add_contents([bm.Text('\n\n'.join(text_left))])
+
+        return contents
